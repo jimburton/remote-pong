@@ -1,15 +1,8 @@
-package ci346.remotepong.client
+package ci346.remotepong
 
 import scala.swing._
 import scala.swing.event._
 import java.awt.Color
-
-class Sprite(var xPos: Int, var yPos: Int)
-
-class Ball(xPos: Int, yPos: Int) extends Sprite(xPos: Int, yPos: Int) {
-  var xDir = 1
-  var yDir = 1
-}
 
 object PongView extends SimpleSwingApplication {
 
@@ -25,15 +18,30 @@ object PongView extends SimpleSwingApplication {
   val REPAINT_DELAY = 100
   val TXT_BEGIN = "Click anywhere to start the game"
 
+  class Sprite(var xPos: Int, var yPos: Int)
+
+  class Ball(xPos: Int, yPos: Int) extends Sprite(xPos: Int, yPos: Int) {
+    var xDir = 1
+    var yDir = 1
+  }
+
   val ball = new Ball(250, 250)
   val paddle1 = new Sprite(0, 300)
   val paddle2 = new Sprite(500, 300)
 
   var inPlay = false
+  var autoPilot = false
 
   def top = new MainFrame {
     title = "Pong, As She is Played"
     //defaultCloseOperation = JFrame.EXIT_ON_CLOSE)
+    val label = new Label {
+      text = TXT_BEGIN
+    }
+    val checkbox = new CheckBox {
+      text = "Autopilot"
+      selected = autoPilot
+    }
     val panel = new Component {
       border = javax.swing.BorderFactory.createLineBorder(Color.black)
       override def paintComponent(g: Graphics2D) = {
@@ -42,6 +50,7 @@ object PongView extends SimpleSwingApplication {
           g.setColor(Color.black)
           g.fillRect(paddle1.xPos, paddle1.yPos, PADDLE_WIDTH, PADDLE_HEIGHT);
 
+          if (autoPilot) movePaddleToBall(paddle1)
           movePaddleToBall(paddle2)
           g.fillRect(paddle2.xPos, paddle2.yPos, PADDLE_WIDTH, PADDLE_HEIGHT);
 
@@ -64,26 +73,32 @@ object PongView extends SimpleSwingApplication {
       }
       listenTo(keys)
       listenTo(mouse.clicks)
+      listenTo(checkbox)
       reactions += {
         case e: MouseClicked =>
           if (!inPlay) startPoint
         case KeyPressed(_, Key.Up, _, _) =>
-          if (paddle1.yPos > 0) paddle1.yPos -= PADDLE_INC
+          if (!autoPilot && paddle1.yPos > 0) paddle1.yPos -= PADDLE_INC
         case KeyReleased(_, Key.Down, _, _) =>
-          if (paddle1.yPos < GAME_HEIGHT) paddle1.yPos += PADDLE_INC
+          if (!autoPilot && paddle1.yPos < GAME_HEIGHT) paddle1.yPos += PADDLE_INC
+        case ButtonClicked(checkbox) => {
+          autoPilot = !autoPilot
+          this.requestFocusInWindow
+        }
       }
       focusable = true
       requestFocus
 
     }
-    val label = new Label {
-      text = TXT_BEGIN
-    }
     contents = new BoxPanel(Orientation.Vertical) {
-      contents += label
+      contents += new BoxPanel(Orientation.Horizontal) {
+        contents += checkbox
+        contents += label
+      }
       contents += panel
       border = Swing.EmptyBorder(30, 30, 10, 30)
     }
+    panel.requestFocusInWindow
     minimumSize = new Dimension(650, 650)
     val t = new javax.swing.Timer(REPAINT_DELAY, new java.awt.event.ActionListener {
       def actionPerformed(e: java.awt.event.ActionEvent) {
