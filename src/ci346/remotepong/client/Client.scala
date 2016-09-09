@@ -7,8 +7,8 @@ import scala.actors.remote.Node
 import ci346.remotepong.types._
 import scala.actors.AbstractActor
 
-@serializable
-class Client(port: Int, peer: Node, count: Int) extends Actor {
+
+class Client(port: Int, peer: Node, count: Int) extends Actor with Serializable {
   trapExit = true // (1)
   var view: View = null
   var server: AbstractActor = null
